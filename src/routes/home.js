@@ -10,14 +10,10 @@ import "./home.css";
 export default class Home extends Component {
   state = {};
 
-  onAuthStateChanged = user => {
+  componentDidMount() {
+    const user = firebase.auth().currentUser;
     if (!user) {
-      this.props.navigate.replace("/");
-      return;
-    }
-
-    // ignore refresh tokens
-    if (user && this.currentUId === user.uid) {
+      console.log("what!this shouldnt happen, no user");
       return;
     }
 
@@ -33,10 +29,6 @@ export default class Home extends Component {
           conversations
         });
       });
-  };
-
-  componentDidMount() {
-    firebase.auth().onAuthStateChanged(this.onAuthStateChanged);
   }
 
   render() {

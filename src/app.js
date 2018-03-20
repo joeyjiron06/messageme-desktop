@@ -5,15 +5,15 @@ import Login from "./routes/login";
 import Home from "./routes/home";
 import * as firebase from "firebase";
 
-const requireAuth = (nextState, replace) => {
-  if (!firebase.auth().currentUser) {
-    replace({
-      pathname: "/"
-    });
-  }
-};
-
 export default class App extends Component {
+  requireAuth = (nextState, replace) => {
+    if (!firebase.auth().currentUser) {
+      replace({
+        pathname: "/"
+      });
+    }
+  };
+
   componentWillMount() {
     firebase.initializeApp({
       apiKey: "AIzaSyABLDsce39YrbqSL2od0xdgYUHvvMdK7d0",
@@ -31,7 +31,12 @@ export default class App extends Component {
         <BrowserRouter ref={this.onRouterRef}>
           <div>
             <Route exact path="/" component={Login} />
-            <Route exact path="/home" component={Home} onEnter={requireAuth} />
+            <Route
+              exact
+              path="/home"
+              component={Home}
+              onEnter={this.requireAuth}
+            />
           </div>
         </BrowserRouter>
       </MuiThemeProvider>
