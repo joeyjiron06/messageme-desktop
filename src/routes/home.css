@@ -1,0 +1,6 @@
+.home-convo-list {
+  width: 30%;
+  max-width: 420px;
+  border-right: solid 1px #dedede;
+  overflow: hidden;
+}
