@@ -1,6 +1,42 @@
+.home-page {
+  display: flex;
+  overflow: hidden;
+  width: 100vw;
+  height: 100vh;
+}
+
 .home-convo-list {
   width: 30%;
   max-width: 420px;
+  min-width: 300px;
   border-right: solid 1px #dedede;
-  overflow: hidden;
+  overflow: scroll;
+}
+
+.home-message-list {
+  display: flex;
+  flex-direction: column;
+  overflow: scroll;
+  padding: 20px;
+  font-size: 14px;
+  flex-grow: 1;
+}
+
+.message {
+  color: black;
+  padding: 10px;
+  border-radius: 20px;
+  margin-bottom: 10px;
+  max-width: 70%;
+}
+
+.message-sent {
+  background-color: #66bb6a;
+  align-self: flex-end;
+  color: white;
+}
+
+.message-received {
+  background-color: #dedede;
+  align-self: flex-start;
 }

@@ -1,16 +1,23 @@
 import React, { Component } from "react";
 import MuiThemeProvider from "material-ui/styles/MuiThemeProvider";
-import { BrowserRouter, Route } from "react-router-dom";
+import { BrowserRouter, Route, Redirect } from "react-router-dom";
 import Login from "./routes/login";
 import Home from "./routes/home";
 import * as firebase from "firebase";
 
+function isLoggedIn() {
+  return !!firebase.auth().currentUser;
+}
+
 export default class App extends Component {
   requireAuth = (nextState, replace) => {
     if (!firebase.auth().currentUser) {
+      console.log("no user exists!");
       replace({
         pathname: "/"
       });
+    } else {
+      console.log("user exists!");
     }
   };
 
@@ -30,12 +37,12 @@ export default class App extends Component {
       <MuiThemeProvider>
         <BrowserRouter ref={this.onRouterRef}>
           <div>
-            <Route exact path="/" component={Login} />
+            <Route exact path="/" render={() => <Redirect to="/login" />} />
+            <Route exact path="/login" component={Login} />
             <Route
               exact
               path="/home"
-              component={Home}
-              onEnter={this.requireAuth}
+              render={() => (isLoggedIn() ? <Home /> : <Redirect to="/" />)}
             />
           </div>
         </BrowserRouter>
