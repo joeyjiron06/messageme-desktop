@@ -27,6 +27,7 @@ export default class Home extends Component {
         address: this.currentConversation.address,
         date: Date.now(),
         status: LOCAL_MESSAGE_STATUS.REQUESTING,
+        conversationId: this.currentConversation.id,
         text
       });
       console.log("on enter!", text);
