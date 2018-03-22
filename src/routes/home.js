@@ -1,4 +1,5 @@
 import React, { Component } from "react";
+import ReactDOM from "react-dom";
 import * as firebase from "firebase";
 import Avatar from "material-ui/Avatar";
 import { List, ListItem } from "material-ui/List";
@@ -7,24 +8,57 @@ import Divider from "material-ui/Divider";
 import CommunicationChatBubble from "material-ui/svg-icons/communication/chat-bubble";
 import "./home.css";
 
+const LOCAL_MESSAGE_STATUS = {
+  REQUESTING: 1,
+  SENDING: 2,
+  SENT: 3,
+  ERROR: 4
+};
+
+// https://yalantis.com/blog/what-i-learned-building-smsmms-messenger-for-android/
 export default class Home extends Component {
   state = {};
 
+  onKeyPress = event => {
+    if (event.key === "Enter") {
+      const text = event.target.value;
+
+      this.outboxDB.push({
+        address: this.currentConversation.address,
+        date: Date.now(),
+        status: LOCAL_MESSAGE_STATUS.REQUESTING,
+        text
+      });
+      console.log("on enter!", text);
+      event.target.value = null;
+    }
+  };
+
+  contactsChanged = snapshot => {
+    const contacts = snapshot.val() || [];
+    const contactNames = {};
+    contacts.forEach(contact => {
+      contactNames[contact.number] = contact.displayName;
+    });
+
+    this.setState({
+      contactNames
+    });
+  };
+
   conversationsChanged = snapshot => {
     const conversations = snapshot.val() || [];
-    this.setState({
-      conversations
-    });
+    console.log("conversations", conversations);
+    this.setState({ conversations });
   };
 
   messagesChanged = snapshot => {
     let messages = snapshot.val() || [];
-    messages = messages.reverse().slice(-20);
+    console.log("messages changed", messages);
+
     this.setState({ messages }, () => {
-      const messageListElement = document.getElementsByClassName(
-        "home-message-list"
-      );
-      messageListElement.scrollTop = messageListElement.scrollHeight;
+      const messagesContainer = ReactDOM.findDOMNode(this.messagesContainer);
+      messagesContainer.scrollTop = messagesContainer.scrollHeight;
     });
   };
 
@@ -45,10 +79,24 @@ export default class Home extends Component {
       .ref("messages")
       .child(user.uid);
 
+    this.contactsDB = firebase
+      .database()
+      .ref("contacts")
+      .child(user.uid);
+
+    this.outboxDB = firebase
+      .database()
+      .ref("outbox")
+      .child(user.uid);
+
+    this.contactsDB.on("value", this.contactsChanged);
+
     this.conversationsDB.on("value", this.conversationsChanged);
   }
 
   conversationClicked(conversation, index) {
+    console.log("conversation clicked", conversation);
+
     if (this.currentConversation) {
       this.removeMessageListener(this.currentConversation);
     }
@@ -70,6 +118,7 @@ export default class Home extends Component {
 
   render() {
     const conversations = this.state.conversations || [];
+    const contactNames = this.state.contactNames || [];
     const messages = this.state.messages || [];
     const selectedIndex = this.state.selectedIndex;
 
@@ -79,7 +128,10 @@ export default class Home extends Component {
           {conversations.map((conversation, index) => (
             <ListItem
               key={conversation.address}
-              primaryText={conversation.address}
+              primaryText={conversation.address
+                .split(",")
+                .map(number => contactNames[number] || number)
+                .join(", ")}
               secondaryText={conversation.body}
               secondaryTextLines={1}
               onClick={this.conversationClicked.bind(this, conversation, index)}
@@ -90,18 +142,40 @@ export default class Home extends Component {
           ))}
         </List>
 
-        <List className="home-message-list" style={{ padding: 20 }}>
-          {messages.map(message => (
-            <div
-              key={message.id}
-              className={`message ${
-                message.type === 2 ? "message-sent" : "message-received"
-              }`}
-            >
-              {message.body}
-            </div>
-          ))}
-        </List>
+        <div className="home-right-side">
+          <div
+            className="home-message-list"
+            style={{ padding: 20 }}
+            ref={el => {
+              this.messagesContainer = el;
+            }}
+          >
+            {messages.map(message => (
+              <div
+                key={message.id}
+                className={`message ${
+                  message.status === 2 ? "message-sent" : "message-received"
+                }`}
+                onClick={() => {
+                  console.log("message clicked", message);
+                }}
+              >
+                {message.type === "MMS" && !message.body
+                  ? "IMAGE"
+                  : message.body}
+              </div>
+            ))}
+          </div>
+
+          <div className="home-input-container">
+            <input
+              type="text"
+              placeholder="Type a message..."
+              className="home-input"
+              onKeyPress={this.onKeyPress}
+            />
+          </div>
+        </div>
       </div>
     );
   }

@@ -13,12 +13,18 @@
   overflow: scroll;
 }
 
+.home-right-side {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  font-size: 14px;
+}
+
 .home-message-list {
   display: flex;
   flex-direction: column;
   overflow: scroll;
   padding: 20px;
-  font-size: 14px;
   flex-grow: 1;
 }
 
@@ -39,4 +45,14 @@
 .message-received {
   background-color: #dedede;
   align-self: flex-start;
+}
+
+.home-input-container {
+  border-top: solid 1px #dedede;
+}
+
+.home-input {
+  font-size: 14px;
+  padding: 16px;
+  width: 100%;
 }
