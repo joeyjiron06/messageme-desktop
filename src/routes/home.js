@@ -8,31 +8,92 @@ import Divider from "material-ui/Divider";
 import CommunicationChatBubble from "material-ui/svg-icons/communication/chat-bubble";
 import "./home.css";
 
-const LOCAL_MESSAGE_STATUS = {
-  REQUESTING: 1,
-  SENDING: 2,
-  SENT: 3,
-  ERROR: 4
+const MESSAGE_STATUS = {
+  RECEIVED: 1,
+  SENT: 2
 };
 
 // https://yalantis.com/blog/what-i-learned-building-smsmms-messenger-for-android/
 export default class Home extends Component {
-  state = {};
+  state = {
+    messages: [], // the messages the phone has sent
+    outboxMessages: [], // the messages this app has requested to be sent
+    sentMessages: {}, // a hash { phoneMessageId : desktopMessageId }
+    conversations: [], // phones list of conversations
+    contactNames: {}, // a hash { phoneNumber : name }
+    selectedIndex: -1 // the index of the selected conversation
+  };
 
   onKeyPress = event => {
     if (event.key === "Enter") {
-      const text = event.target.value;
+      const body = event.target.value;
+      if (!body) {
+        return;
+      }
 
-      this.outboxDB.push({
-        address: this.currentConversation.address,
-        date: Date.now(),
-        status: LOCAL_MESSAGE_STATUS.REQUESTING,
-        conversationId: this.currentConversation.id,
-        text
-      });
-      console.log("on enter!", text);
+      if (!this.currentConversation) {
+        return;
+      }
+
+      // create message
+      const outboxMessage = this.createMessage(body);
+
+      // add to firebase, this will trigget a outbox change event
+      // @see
+      this.outboxDB.push(outboxMessage);
+
+      // // update UI
+      const outboxMessages = [...this.state.outboxMessages, outboxMessage];
+
+      this.setState(
+        {
+          messages: this.joinMessages(this.state.messages, outboxMessages)
+        },
+        () => {
+          this.scrollToBottom();
+        }
+      );
+
+      // clear input
       event.target.value = null;
     }
+  };
+
+  createMessage(body) {
+    const now = Date.now();
+    return {
+      id: now + "", // uuid using timestamp guaranteed to change unless someone types faster than a millisecond
+      date: now,
+      address: this.currentConversation.address,
+      threadId: this.currentConversation.id,
+      isOutboxMessage: true,
+      body
+    };
+  }
+
+  scrollToBottom() {
+    const messagesContainer = ReactDOM.findDOMNode(this.messagesContainer);
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+  }
+
+  attemptAutoSelect() {
+    if (this.hasAutoSelected) {
+      return;
+    }
+
+    if (!this.state.conversations || !this.state.conversations.length) {
+      return;
+    }
+
+    this.hasAutoSelected = true;
+    this.conversationClicked(this.state.conversations[0], 0);
+  }
+
+  onSentChanged = snapshot => {
+    const sentMessages = snapshot.val() || {};
+    this.setState({
+      sentMessages
+    });
   };
 
   contactsChanged = snapshot => {
@@ -50,18 +111,40 @@ export default class Home extends Component {
   conversationsChanged = snapshot => {
     const conversations = snapshot.val() || [];
     console.log("conversations", conversations);
-    this.setState({ conversations });
+    this.setState({ conversations }, () => {
+      this.attemptAutoSelect();
+    });
   };
 
   messagesChanged = snapshot => {
-    let messages = snapshot.val() || [];
-    console.log("messages changed", messages);
+    const messages = snapshot.val() || [];
+    this.setState(
+      {
+        messages: this.joinMessages(messages, this.state.outboxMessages)
+      },
+      () => {
+        this.scrollToBottom();
+      }
+    );
+  };
 
-    this.setState({ messages }, () => {
-      const messagesContainer = ReactDOM.findDOMNode(this.messagesContainer);
-      messagesContainer.scrollTop = messagesContainer.scrollHeight;
+  outboxChanged = snapshot => {
+    const outboxMessages = [];
+    snapshot.forEach(msgSnapShot => {
+      outboxMessages.push(msgSnapShot.val());
+    });
+
+    this.setState({
+      messages: this.joinMessages(this.state.messages, outboxMessages)
     });
   };
+
+  joinMessages(phoneMessages = [], outboxMessages = []) {
+    return phoneMessages
+      .slice()
+      .concat(outboxMessages)
+      .sort((m1, m2) => m1.date - m2.date);
+  }
 
   componentDidMount() {
     const user = firebase.auth().currentUser;
@@ -90,9 +173,20 @@ export default class Home extends Component {
       .ref("outbox")
       .child(user.uid);
 
-    this.contactsDB.on("value", this.contactsChanged);
+    this.desktopDB = firebase
+      .database()
+      .ref("desktop")
+      .child(user.uid);
 
+    this.sentDB = firebase
+      .database()
+      .ref("sent")
+      .child(user.uid);
+
+    this.contactsDB.on("value", this.contactsChanged);
+    this.outboxDB.on("value", this.outboxChanged);
     this.conversationsDB.on("value", this.conversationsChanged);
+    this.sentDB.on("value", this.onSentChanged);
   }
 
   conversationClicked(conversation, index) {
@@ -107,6 +201,13 @@ export default class Home extends Component {
     this.setState({
       selectedIndex: index
     });
+
+    this.desktopDB.child("conversation").set(this.currentConversation.id);
+
+    this.desktopDB
+      .child("conversation")
+      .onDisconnect()
+      .set(null);
   }
 
   addMessageListener(conversation) {
@@ -118,63 +219,97 @@ export default class Home extends Component {
   }
 
   render() {
-    const conversations = this.state.conversations || [];
-    const contactNames = this.state.contactNames || [];
-    const messages = this.state.messages || [];
-    const selectedIndex = this.state.selectedIndex;
+    const {
+      messages,
+      outboxMessages,
+      sentMessages,
+      conversations,
+      contactNames,
+      selectedIndex
+    } = this.state;
 
     return (
       <div className="home-page">
-        <List className="home-convo-list">
-          {conversations.map((conversation, index) => (
-            <ListItem
-              key={conversation.address}
-              primaryText={conversation.address
-                .split(",")
-                .map(number => contactNames[number] || number)
-                .join(", ")}
-              secondaryText={conversation.body}
-              secondaryTextLines={1}
-              onClick={this.conversationClicked.bind(this, conversation, index)}
-              style={{
-                backgroundColor: selectedIndex === index ? "#efefef" : null
-              }}
-            />
-          ))}
-        </List>
+        <div className="nav-bar">
+          <h1>Message</h1>
+        </div>
 
-        <div className="home-right-side">
-          <div
-            className="home-message-list"
-            style={{ padding: 20 }}
-            ref={el => {
-              this.messagesContainer = el;
-            }}
-          >
-            {messages.map(message => (
-              <div
-                key={message.id}
-                className={`message ${
-                  message.status === 2 ? "message-sent" : "message-received"
-                }`}
-                onClick={() => {
-                  console.log("message clicked", message);
+        <div className="home-body">
+          <List className="home-convo-list">
+            {conversations.map((conversation, index) => (
+              <ListItem
+                key={conversation.address}
+                primaryText={conversation.address
+                  .split(",")
+                  .map(number => contactNames[number] || number)
+                  .join(", ")}
+                secondaryText={conversation.body}
+                secondaryTextLines={1}
+                onClick={this.conversationClicked.bind(
+                  this,
+                  conversation,
+                  index
+                )}
+                style={{
+                  backgroundColor: selectedIndex === index ? "#efefef" : null
                 }}
-              >
-                {message.type === "MMS" && !message.body
-                  ? "IMAGE"
-                  : message.body}
-              </div>
+              />
             ))}
-          </div>
+          </List>
 
-          <div className="home-input-container">
-            <input
-              type="text"
-              placeholder="Type a message..."
-              className="home-input"
-              onKeyPress={this.onKeyPress}
-            />
+          <div className="home-right-side">
+            <div
+              className="home-message-list"
+              style={{ padding: 20 }}
+              ref={el => {
+                this.messagesContainer = el;
+              }}
+            >
+              {messages.map(message => (
+                <div
+                  key={message.id}
+                  className={`message ${
+                    message.status === MESSAGE_STATUS.SENT ||
+                    message.isOutboxMessage ||
+                    sentMessages[message.id]
+                      ? "message-sent"
+                      : "message-received"
+                  }`}
+                  onClick={() => {
+                    console.log("message clicked", message);
+                  }}
+                >
+                  <div className="message-text">
+                    {message.type === "MMS" && !message.body
+                      ? "IMAGE"
+                      : message.body}
+                  </div>
+
+                  {message.isOutboxMessage || sentMessages[message.id] ? (
+                    <div
+                      className={`message-pending-mark
+                      ${
+                        sentMessages[message.id]
+                          ? "message-pending-mark--sent"
+                          : null
+                      }
+                    `}
+                    >
+                      ✓
+                    </div>
+                  ) : null}
+                </div>
+              ))}
+            </div>
+
+            <div className="home-input-container">
+              <input
+                type="text"
+                placeholder="Type a message..."
+                className="home-input"
+                onKeyPress={this.onKeyPress}
+              />
+            </div>
           </div>
         </div>
       </div>

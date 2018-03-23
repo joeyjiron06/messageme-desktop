@@ -1,8 +1,22 @@
 .home-page {
   display: flex;
+  flex-direction: column;
   overflow: hidden;
   width: 100vw;
   height: 100vh;
+}
+
+.nav-bar {
+  width: 100%;
+  height: 50px;
+  border-bottom: solid 1px #efefef;
+  flex-shrink: 0;
+}
+
+.home-body {
+  flex-grow: 1;
+  display: flex;
+  overflow: hidden;
 }
 
 .home-convo-list {
@@ -29,22 +43,56 @@
 }
 
 .message {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-end;
   color: black;
-  padding: 10px;
-  border-radius: 20px;
   margin-bottom: 10px;
   max-width: 70%;
+  flex-grow: 1;
+  flex-shrink: 0;
 }
 
 .message-sent {
-  background-color: #66bb6a;
   align-self: flex-end;
-  color: white;
 }
 
 .message-received {
-  background-color: #dedede;
   align-self: flex-start;
+}
+
+.message-text {
+  padding: 10px;
+  border-radius: 20px;
+  flex-grow: 1;
+}
+
+.message.message-received .message-text {
+  color: black;
+  background-color: #dedede;
+}
+
+.message.message-sent .message-text {
+  background-color: #66bb6a;
+  color: white;
+}
+
+.message-pending-mark {
+  width: 8px;
+  height: 8px;
+  font-size: 8px;
+  flex-shrink: 0;
+  border: solid 1px #66bb6a;
+  border-radius: 50%;
+  padding: 2px;
+  text-align: center;
+  color: #66bb6a;
+  margin-left: 4px;
+}
+
+.message-pending-mark--sent {
+  background-color: #66bb6a;
+  color: white;
 }
 
 .home-input-container {
