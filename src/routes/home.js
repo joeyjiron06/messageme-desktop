@@ -1,11 +1,7 @@
 import React, { Component } from "react";
 import ReactDOM from "react-dom";
 import * as firebase from "firebase";
-import Avatar from "material-ui/Avatar";
 import { List, ListItem } from "material-ui/List";
-import Subheader from "material-ui/Subheader";
-import Divider from "material-ui/Divider";
-import CommunicationChatBubble from "material-ui/svg-icons/communication/chat-bubble";
 import "./home.css";
 
 const MESSAGE_STATUS = {
@@ -20,9 +16,64 @@ export default class Home extends Component {
     outboxMessages: [], // the messages this app has requested to be sent
     sentMessages: {}, // a hash { phoneMessageId : desktopMessageId }
     conversations: [], // phones list of conversations
-    contactNames: {}, // a hash { phoneNumber : name }
+    contacts: {}, // a hash { phoneNumber : name }
     selectedIndex: -1 // the index of the selected conversation
   };
+
+  //FIREBASE LISTNERS
+
+  onSentChanged = snapshot => {
+    const sentMessages = snapshot.val() || {};
+    this.setState({
+      sentMessages
+    });
+  };
+
+  contactsChanged = snapshot => {
+    const contacts = snapshot.val() || {};
+    this.setState({ contacts });
+  };
+
+  conversationsChanged = snapshot => {
+    const conversations = snapshot.val() || [];
+    console.log("conversations", conversations);
+    this.setState({ conversations }, () => {
+      this.attemptAutoSelect();
+    });
+  };
+
+  messagesChanged = snapshot => {
+    const messages = snapshot.val() || [];
+    this.setState(
+      {
+        messages: this.joinMessages(messages, this.state.outboxMessages)
+      },
+      () => {
+        this.scrollToBottom();
+      }
+    );
+  };
+
+  outboxChanged = snapshot => {
+    const outboxMessages = [];
+    snapshot.forEach(msgSnapShot => {
+      outboxMessages.push(msgSnapShot.val());
+    });
+
+    this.setState({
+      messages: this.joinMessages(this.state.messages, outboxMessages)
+    });
+  };
+
+  addMessageListener(conversation) {
+    this.messagesDB.child(conversation.id).on("value", this.messagesChanged);
+  }
+
+  removeMessageListener(conversation) {
+    this.messagesDB.child(conversation.id).off("value", this.messagesChanged);
+  }
+
+  // UI LISTENERS
 
   onKeyPress = event => {
     if (event.key === "Enter") {
@@ -59,6 +110,36 @@ export default class Home extends Component {
     }
   };
 
+  conversationClicked(conversation, index) {
+    console.log("conversation clicked", conversation);
+
+    if (this.currentConversation) {
+      this.removeMessageListener(this.currentConversation);
+    }
+
+    this.currentConversation = conversation;
+    this.addMessageListener(conversation);
+    this.setState({
+      selectedIndex: index
+    });
+
+    this.desktopDB.child("conversation").set(this.currentConversation.id);
+
+    this.desktopDB
+      .child("conversation")
+      .onDisconnect()
+      .set(null);
+  }
+
+  // HELPERS
+
+  joinMessages(phoneMessages = [], outboxMessages = []) {
+    return phoneMessages
+      .slice()
+      .concat(outboxMessages)
+      .sort((m1, m2) => m1.date - m2.date);
+  }
+
   createMessage(body) {
     const now = Date.now();
     return {
@@ -89,63 +170,7 @@ export default class Home extends Component {
     this.conversationClicked(this.state.conversations[0], 0);
   }
 
-  onSentChanged = snapshot => {
-    const sentMessages = snapshot.val() || {};
-    this.setState({
-      sentMessages
-    });
-  };
-
-  contactsChanged = snapshot => {
-    const contacts = snapshot.val() || [];
-    const contactNames = {};
-    contacts.forEach(contact => {
-      contactNames[contact.number] = contact.displayName;
-    });
-
-    this.setState({
-      contactNames
-    });
-  };
-
-  conversationsChanged = snapshot => {
-    const conversations = snapshot.val() || [];
-    console.log("conversations", conversations);
-    this.setState({ conversations }, () => {
-      this.attemptAutoSelect();
-    });
-  };
-
-  messagesChanged = snapshot => {
-    const messages = snapshot.val() || [];
-    this.setState(
-      {
-        messages: this.joinMessages(messages, this.state.outboxMessages)
-      },
-      () => {
-        this.scrollToBottom();
-      }
-    );
-  };
-
-  outboxChanged = snapshot => {
-    const outboxMessages = [];
-    snapshot.forEach(msgSnapShot => {
-      outboxMessages.push(msgSnapShot.val());
-    });
-
-    this.setState({
-      messages: this.joinMessages(this.state.messages, outboxMessages)
-    });
-  };
-
-  joinMessages(phoneMessages = [], outboxMessages = []) {
-    return phoneMessages
-      .slice()
-      .concat(outboxMessages)
-      .sort((m1, m2) => m1.date - m2.date);
-  }
-
+  // LIFECYCLE
   componentDidMount() {
     const user = firebase.auth().currentUser;
     if (!user) {
@@ -189,33 +214,11 @@ export default class Home extends Component {
     this.sentDB.on("value", this.onSentChanged);
   }
 
-  conversationClicked(conversation, index) {
-    console.log("conversation clicked", conversation);
-
-    if (this.currentConversation) {
-      this.removeMessageListener(this.currentConversation);
-    }
-
-    this.currentConversation = conversation;
-    this.addMessageListener(conversation);
-    this.setState({
-      selectedIndex: index
-    });
-
-    this.desktopDB.child("conversation").set(this.currentConversation.id);
-
-    this.desktopDB
-      .child("conversation")
-      .onDisconnect()
-      .set(null);
-  }
-
-  addMessageListener(conversation) {
-    this.messagesDB.child(conversation.id).on("value", this.messagesChanged);
-  }
-
-  removeMessageListener(conversation) {
-    this.messagesDB.child(conversation.id).off("value", this.messagesChanged);
+  componentWillUnmount() {
+    this.contactsDB.off("value", this.contactsChanged);
+    this.outboxDB.off("value", this.outboxChanged);
+    this.conversationsDB.off("value", this.conversationsChanged);
+    this.sentDB.off("value", this.onSentChanged);
   }
 
   render() {
@@ -224,7 +227,7 @@ export default class Home extends Component {
       outboxMessages,
       sentMessages,
       conversations,
-      contactNames,
+      contacts,
       selectedIndex
     } = this.state;
 
@@ -241,7 +244,7 @@ export default class Home extends Component {
                 key={conversation.address}
                 primaryText={conversation.address
                   .split(",")
-                  .map(number => contactNames[number] || number)
+                  .map(number => contacts[number] || number)
                   .join(", ")}
                 secondaryText={conversation.body}
                 secondaryTextLines={1}
