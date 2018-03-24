@@ -9,6 +9,22 @@ const MESSAGE_STATUS = {
   SENT: 2
 };
 
+const CONVERSATION_TYPE = {
+  SMS: "SMS",
+  MMS: "MMS"
+};
+
+function playSound(url) {
+  return new Promise((resolve, reject) => {
+    const audio = new Audio();
+    audio.autoplay = true;
+    audio.loop = false;
+    audio.onended = resolve;
+    audio.onerror = reject;
+    audio.src = url;
+  });
+}
+
 // https://yalantis.com/blog/what-i-learned-building-smsmms-messenger-for-android/
 export default class Home extends Component {
   state = {
@@ -17,7 +33,7 @@ export default class Home extends Component {
     sentMessages: {}, // a hash { phoneMessageId : desktopMessageId }
     conversations: [], // phones list of conversations
     contacts: {}, // a hash { phoneNumber : name }
-    selectedIndex: -1 // the index of the selected conversation
+    currentConversation: null // the current conversation being viewed
   };
 
   //FIREBASE LISTNERS
@@ -44,6 +60,14 @@ export default class Home extends Component {
 
   messagesChanged = snapshot => {
     const messages = snapshot.val() || [];
+
+    if (
+      messages.length &&
+      messages[messages.length - 1].status === MESSAGE_STATUS.RECEIVED
+    ) {
+      // check if i just switched
+    }
+
     this.setState(
       {
         messages: this.joinMessages(messages, this.state.outboxMessages)
@@ -65,14 +89,6 @@ export default class Home extends Component {
     });
   };
 
-  addMessageListener(conversation) {
-    this.messagesDB.child(conversation.id).on("value", this.messagesChanged);
-  }
-
-  removeMessageListener(conversation) {
-    this.messagesDB.child(conversation.id).off("value", this.messagesChanged);
-  }
-
   // UI LISTENERS
 
   onKeyPress = event => {
@@ -82,7 +98,7 @@ export default class Home extends Component {
         return;
       }
 
-      if (!this.currentConversation) {
+      if (!this.state.currentConversation) {
         return;
       }
 
@@ -110,25 +126,41 @@ export default class Home extends Component {
     }
   };
 
-  conversationClicked(conversation, index) {
+  conversationClicked(conversation) {
     console.log("conversation clicked", conversation);
+    const { currentConversation } = this.state;
 
-    if (this.currentConversation) {
-      this.removeMessageListener(this.currentConversation);
+    // optimization - already displaying this conversation, so dont change anything
+    if (currentConversation && currentConversation.id === conversation.id) {
+      return;
     }
 
-    this.currentConversation = conversation;
-    this.addMessageListener(conversation);
-    this.setState({
-      selectedIndex: index
-    });
+    // remove old listener for messages
+    if (currentConversation) {
+      this.messagesDB
+        .child(currentConversation.id)
+        .off("value", this.messagesChanged);
+    }
 
-    this.desktopDB.child("conversation").set(this.currentConversation.id);
+    // wait for messages to come in from firebase, then redraw the messages for that specific
+    this.messagesDB.child(conversation.id).on("value", this.messagesChanged);
 
+    // add this to the desktop db so the phone will listen to this value
+    // and post the messages for this conversation
+    this.desktopDB.child("conversation").set(conversation.id);
+
+    // when we disconnect we need to set the value to null so the phone
+    // wont post messages, doing unecessary work
     this.desktopDB
       .child("conversation")
       .onDisconnect()
       .set(null);
+
+    // update the UI
+    this.setState({
+      currentConversation: conversation,
+      messages: []
+    });
   }
 
   // HELPERS
@@ -145,8 +177,8 @@ export default class Home extends Component {
     return {
       id: now + "", // uuid using timestamp guaranteed to change unless someone types faster than a millisecond
       date: now,
-      address: this.currentConversation.address,
-      threadId: this.currentConversation.id,
+      address: this.state.currentConversation.address,
+      threadId: this.state.currentConversation.id,
       isOutboxMessage: true,
       body
     };
@@ -168,6 +200,22 @@ export default class Home extends Component {
 
     this.hasAutoSelected = true;
     this.conversationClicked(this.state.conversations[0], 0);
+  }
+
+  playMessageSound() {
+    if (this.isPlayingSound) {
+      return;
+    }
+
+    this.isPlayingSound = true;
+    playSound("incoming_message.mp3")
+      .then(() => {
+        this.isPlayingSound = false;
+      })
+      .catch(err => {
+        this.isPlayingSound = false;
+        console.error("error playing sound", err);
+      });
   }
 
   // LIFECYCLE
@@ -228,37 +276,47 @@ export default class Home extends Component {
       sentMessages,
       conversations,
       contacts,
-      selectedIndex
+      currentConversation
     } = this.state;
 
     return (
       <div className="home-page">
         <div className="nav-bar">
-          <h1>Message</h1>
+          <h1>Messages</h1>
         </div>
 
         <div className="home-body">
-          <List className="home-convo-list">
+          <div className="home-convo-list">
             {conversations.map((conversation, index) => (
-              <ListItem
+              <div
+                className="conversation"
                 key={conversation.address}
-                primaryText={conversation.address
-                  .split(",")
-                  .map(number => contacts[number] || number)
-                  .join(", ")}
-                secondaryText={conversation.body}
-                secondaryTextLines={1}
+                style={{
+                  backgroundColor:
+                    conversation === currentConversation ? "#efefef" : null
+                }}
                 onClick={this.conversationClicked.bind(
                   this,
                   conversation,
                   index
                 )}
-                style={{
-                  backgroundColor: selectedIndex === index ? "#efefef" : null
-                }}
-              />
+              >
+                <div className="conversation-address">
+                  {conversation.address
+                    .split(",")
+                    .map(number => contacts[number] || number)
+                    .join(", ")}
+                </div>
+
+                <div className="conversation-snippet">
+                  {!conversation.body &&
+                  conversation.messageType === CONVERSATION_TYPE.MMS
+                    ? "MMS Message"
+                    : conversation.body}
+                </div>
+              </div>
             ))}
-          </List>
+          </div>
 
           <div className="home-right-side">
             <div
