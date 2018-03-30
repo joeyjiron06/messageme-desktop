@@ -1,13 +1,13 @@
-import React, { Component } from "react";
-import "./login.css";
-import * as firebase from "firebase";
+import React, { Component } from 'react';
+import './login.css';
+import * as firebase from 'firebase';
 
 export default class Login extends Component {
   componentDidMount() {
     this.authUnSubscriber = firebase.auth().onAuthStateChanged(user => {
       if (user) {
-        console.log("logged in!", user);
-        this.props.history.replace("/home");
+        console.log('logged in!', user);
+        this.props.history.replace('/home');
       }
     });
   }
@@ -21,13 +21,13 @@ export default class Login extends Component {
       .auth()
       .signInWithPopup(new firebase.auth.FacebookAuthProvider())
       .then(function(result) {
-        console.log("logged in!", result);
+        console.log('logged in!', result);
       })
       .catch(function(error) {
         // Handle Errors here.
         var errorCode = error.code;
         var errorMessage = error.message;
-        console.error("error logging in", error);
+        console.error('error logging in', error);
       });
   };
 
