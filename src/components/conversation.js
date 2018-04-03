@@ -4,7 +4,9 @@ import './conversation.css';
 export default ({ conversation, onClick, isSelected }) => (
   <div
     key={conversation.address}
-    className={'conversation ' + (isSelected ? 'conversation-selected ' : null)}
+    className={`conversation
+      ${isSelected ? 'conversation-selected ' : null}
+    `}
     onClick={() => {
       if (typeof onClick === 'function') {
         onClick(conversation);

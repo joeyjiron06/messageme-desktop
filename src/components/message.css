@@ -1,0 +1,60 @@
+.message {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-end;
+  color: black;
+  margin-bottom: 10px;
+  max-width: 70%;
+  flex-grow: 1;
+  flex-shrink: 0;
+}
+
+.message-sent {
+  align-self: flex-end;
+}
+
+.message-received {
+  align-self: flex-start;
+}
+
+.message-text {
+  padding: 10px;
+  border-radius: 20px;
+  flex-grow: 1;
+}
+
+.messsage-image {
+  background: white;
+  border: solid 1px #cacaca;
+  padding: 4px;
+  border-radius: 8px;
+  color: black;
+}
+
+.message.message-received .message-text {
+  color: black;
+  background-color: #dedede;
+}
+
+.message.message-sent .message-text {
+  background-color: #66bb6a;
+  color: white;
+}
+
+.message-pending-mark {
+  width: 8px;
+  height: 8px;
+  font-size: 8px;
+  flex-shrink: 0;
+  border: solid 1px #66bb6a;
+  border-radius: 50%;
+  padding: 2px;
+  text-align: center;
+  color: #66bb6a;
+  margin-left: 4px;
+}
+
+.message-pending-mark--sent {
+  background-color: #66bb6a;
+  color: white;
+}
