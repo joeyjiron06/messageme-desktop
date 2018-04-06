@@ -18,26 +18,24 @@ class Firebase extends EventEmitter {
     }
 
     // setup databases
-    const firebaseDB = firebase.database();
+    const firebaseDB = firebase.database().ref(user.uid);
     this.db = {
-      conversations: firebaseDB.ref('conversations').child(user.uid), // list of conversations
-      contacts: firebaseDB.ref('contacts').child(user.uid), // contacts hashed by phone numbers
-      messages: firebaseDB.ref('messages').child(user.uid), // messages sent by the phone hashed by conversation id
-      outbox: firebaseDB.ref('outbox').child(user.uid), // messages sent from desktop
-      desktop: firebaseDB.ref('desktop').child(user.uid), // state of the desktop
-      sent: firebaseDB.ref('sent').child(user.uid) // sent via firebase
+      conversations: firebaseDB.child('conversations'), // list of conversations
+      contacts: firebaseDB.child('contacts'), // contacts hashed by phone numbers
+      messages: firebaseDB.child('messages'), // messages sent by the phone hashed by conversation id
+      outbox: firebaseDB.child('outbox'), // messages sent from desktop
+      desktop: firebaseDB.child('desktop'), // state of the desktop
+      mmsUploads: firebaseDB.child('mmsUploadUrls') // urls of images uploaded to firebase storage
     };
 
     // setup default values for datasets
     this.messages = []; // messages posted on firebase
     this.conversations = [];
-    this.sentMessageIds = {};
     this.contacts = {};
 
     // add listeners
     this.db.conversations.on('value', (this.handleConversationsChanged = this.handleConversationsChanged.bind(this)));
     this.db.contacts.on('value', (this.handleContactsChanged = this.handleContactsChanged.bind(this)));
-    this.db.sent.on('value', (this.handleSentChanged = this.handleSentChanged.bind(this)));
 
     // when we disconnect we need to set the value to null so the phone
     // wont post messages, doing unecessary work
@@ -75,12 +73,20 @@ class Firebase extends EventEmitter {
     // update the outbox messages now instead of waiting for the outboxChanged
     // callback to get triggered. this helps redraw the UI quickly
     const messages = [...this.messages, message];
-    this.updateMessages({ messages });
+    this.updateMessages(messages);
 
     // add to firebase, this will trigget a outbox change event
     // also, the phone is listening for changes to the outbox and
     // will attempt to send the message, then move it to "sent" db
     this.db.outbox.push(message);
+  }
+
+  requestMMSContent(message) {
+    this.db.desktop
+      .child('requests')
+      .child('mmsUpload')
+      .child(message.id)
+      .set(true);
   }
 
   // listners
@@ -97,27 +103,13 @@ class Firebase extends EventEmitter {
   handleMessagesChanged(snapshot) {
     const messages = snapshot.val() || [];
     console.log('messages changed', messages);
-    this.updateMessages({ messages });
-  }
-
-  handleSentChanged(snapshot) {
-    const sentMessageIds = snapshot.val() || {};
-    console.log('sentMmessageIds changed', sentMessageIds);
-    this.updateMessages({ sentMessageIds });
+    this.updateMessages(messages);
   }
 
   // helpers
 
-  updateMessages({ messages, sentMessageIds }) {
-    this.messages = messages || this.messages;
-    this.sentMessageIds = sentMessageIds || this.sentMessageIds;
-
-    this.messages.forEach(message => {
-      // then sent message ids is the hash of messageIds sent bc requests
-      // came from the desktop app
-      message.sentFromDesktop = !!this.sentMessageIds[message.id];
-    });
-
+  updateMessages(messages) {
+    this.messages = messages;
     this.emit({
       type: EVENTS.MESSAGES_CHANGED,
       messages: this.messages

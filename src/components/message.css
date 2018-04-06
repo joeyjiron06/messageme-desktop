@@ -18,25 +18,40 @@
 }
 
 .message-text {
+}
+
+.message-content {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
   padding: 10px;
   border-radius: 20px;
   flex-grow: 1;
+  width: 100%;
 }
 
-.messsage-image {
+.message-image {
+  border-radius: 8px;
+  cursor: pointer;
+  width: 100%;
+  align-self: center;
+}
+
+.messsage-image-icon {
   background: white;
-  border: solid 1px #cacaca;
   padding: 4px;
   border-radius: 8px;
-  color: black;
+  color: #9e9e9e;
+  display: flex;
+  cursor: pointer;
 }
 
-.message.message-received .message-text {
+.message.message-received .message-content {
   color: black;
   background-color: #dedede;
 }
 
-.message.message-sent .message-text {
+.message.message-sent .message-content {
   background-color: #66bb6a;
   color: white;
 }

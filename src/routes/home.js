@@ -53,6 +53,10 @@ export default class Home extends Component {
     }
   };
 
+  onMmsContentClicked = message => {
+    Firebase.requestMMSContent(message);
+  };
+
   conversationClicked(conversation) {
     console.log('conversation clicked', conversation);
     const { currentConversation } = this.state;
@@ -83,7 +87,7 @@ export default class Home extends Component {
       id: now + '', // uuid using timestamp guaranteed to change unless someone types faster than a millisecond
       date: now,
       address: this.state.currentConversation.address,
-      threadId: this.state.currentConversation.id,
+      conversationId: this.state.currentConversation.id,
       status: MESSAGE_STATUS.REQUESTING, // set status as requesting for the UI
       body
     };
@@ -238,7 +242,9 @@ export default class Home extends Component {
               {isLoading ? (
                 <div>Loading...</div>
               ) : (
-                messages.map(message => <Message key={message.id} message={message} />)
+                messages.map(message => (
+                  <Message key={message.id} message={message} onMmsContentClicked={this.onMmsContentClicked} />
+                ))
               )}
             </div>
 
