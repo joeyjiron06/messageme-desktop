@@ -78,15 +78,51 @@ class Firebase extends EventEmitter {
     // add to firebase, this will trigget a outbox change event
     // also, the phone is listening for changes to the outbox and
     // will attempt to send the message, then move it to "sent" db
-    this.db.outbox.push(message);
+    this.db.outbox.child(message.id).set(message);
   }
 
-  requestMMSContent(message) {
-    this.db.desktop
-      .child('requests')
-      .child('mmsUpload')
-      .child(message.id)
-      .set(true);
+  requestMMSContent(message, part) {
+    return new Promise((resolve, reject) => {
+      const mmsUploadUrlsDB = this.db.mmsUploads.child(part.id);
+
+      const timeout = setTimeout(() => {
+        finish(null, true);
+      }, 20000);
+
+      const finish = (url, timedOut) => {
+        clearTimeout(timeout);
+        mmsUploadUrlsDB.off('value', onUrlAdded);
+
+        if (timedOut) {
+          reject({
+            message: 'timed out'
+          });
+        } else if (!url) {
+          reject({
+            message: 'no url'
+          });
+        } else {
+          resolve(url);
+        }
+      };
+
+      const onUrlAdded = snapshot => {
+        const url = snapshot.val();
+        if (!url) {
+          return;
+        }
+        debugger;
+        finish(url, false);
+      };
+
+      mmsUploadUrlsDB.on('value', onUrlAdded);
+
+      this.db.desktop
+        .child('requests')
+        .child('mmsUpload')
+        .child(part.id)
+        .set(true);
+    });
   }
 
   // listners

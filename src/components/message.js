@@ -22,7 +22,7 @@ function renderMMSContent(message, onClick) {
               onClick={() => {
                 console.log('image message clicked', message);
                 if (typeof onClick === 'function') {
-                  onClick(message);
+                  onClick(message, part);
                 }
               }}
             >

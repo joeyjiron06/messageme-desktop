@@ -53,8 +53,18 @@ export default class Home extends Component {
     }
   };
 
-  onMmsContentClicked = message => {
-    Firebase.requestMMSContent(message);
+  onMmsContentClicked = (message, part) => {
+    Firebase.requestMMSContent(message, part)
+      .then(url => {
+        part.url = url;
+        // trigger a UI update
+        this.setState({
+          messages: this.state.messages
+        });
+      })
+      .catch(err => {
+        console.error('error fetching url', err);
+      });
   };
 
   conversationClicked(conversation) {
@@ -172,6 +182,8 @@ export default class Home extends Component {
   }
 
   attemptToShowNotification(messages) {
+    return;
+
     const lastMessage = messages[messages.length - 1];
 
     if (this.state.isLoading) {

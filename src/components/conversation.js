@@ -13,14 +13,10 @@ export default ({ conversation, onClick, isSelected }) => (
       }
     }}
   >
-    <div className="conversation-address">
-      {conversation.displayName || conversation.address}
-    </div>
+    <div className="conversation-address">{conversation.displayName || conversation.address}</div>
 
     <div className="conversation-snippet">
-      {!conversation.body && conversation.messageType === 'MMS'
-        ? 'MMS Message'
-        : conversation.body}
+      {!conversation.body && conversation.address.length > 10 ? 'MMS Message' : conversation.body}
     </div>
   </div>
 );
