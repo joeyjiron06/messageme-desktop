@@ -1,4 +1,4 @@
-#MessageMe Desktop
+# MessageMe Desktop
 
 [![Build Status](https://travis-ci.org/joeyjiron06/messageme-desktop.svg?branch=master)](https://travis-ci.org/joeyjiron06/messageme-desktop)
 
