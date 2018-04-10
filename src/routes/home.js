@@ -1,6 +1,5 @@
 import React, { Component } from 'react';
 import ReactDOM from 'react-dom';
-import * as firebase from 'firebase';
 import Conversation from '../components/conversation';
 import Message from '../components/message';
 import NavBar from '../components/navbar';
