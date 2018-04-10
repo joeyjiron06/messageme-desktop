@@ -1,3 +1,9 @@
+#MessageMe Desktop
+
+[![Build Status](https://travis-ci.org/joeyjiron06/messageme-desktop.svg?branch=master)](https://travis-ci.org/joeyjiron06/messageme-desktop)
+
+A web app that allows you to send sms texts from your android phone
+
 This project was bootstrapped with [Create React App](https://github.com/facebookincubator/create-react-app).
 
 Below you will find some information on how to perform common tasks.<br>
