@@ -4,18 +4,13 @@ import * as firebase from 'firebase';
 export const EVENTS = {
   CONVERSATIONS_CHANGED: 'CONVERSATIONS_CHANGED',
   CONVERSATION_SELECTED: 'CONVERSATION_SELECTED',
-  MESSAGES_CHANGED: 'MESSAGES_CHANGED'
+  MESSAGES_CHANGED: 'MESSAGES_CHANGED',
+  PHONE_STATUS_CHANGED: 'PHONE_STATUS_CHANGED'
 };
 
-class Firebase extends EventEmitter {
-  // public
-
+class FirebaseStore extends EventEmitter {
   init() {
     const user = firebase.auth().currentUser;
-    if (!user) {
-      console.log('cannot init firebase with no user!');
-      return;
-    }
 
     // setup databases
     const firebaseDB = firebase.database().ref(user.uid);
@@ -25,7 +20,8 @@ class Firebase extends EventEmitter {
       messages: firebaseDB.child('messages'), // messages sent by the phone hashed by conversation id
       outbox: firebaseDB.child('outbox'), // messages sent from desktop
       desktop: firebaseDB.child('desktop'), // state of the desktop
-      mmsUploads: firebaseDB.child('mmsUploadUrls') // urls of images uploaded to firebase storage
+      mmsUploads: firebaseDB.child('mmsUploadUrls'), // urls of images uploaded to firebase storage
+      phone: firebaseDB.child('phone') // phone state stuff
     };
 
     // setup default values for datasets
@@ -43,6 +39,10 @@ class Firebase extends EventEmitter {
       .child('conversation')
       .onDisconnect()
       .set(null);
+
+    this.db.phone
+      .child('online')
+      .on('value', (this.handlePhoneOnlineChanged = this.handlePhoneOnlineChanged.bind(this)));
   }
 
   setConversation(conversation) {
@@ -111,7 +111,6 @@ class Firebase extends EventEmitter {
         if (!url) {
           return;
         }
-        debugger;
         finish(url, false);
       };
 
@@ -134,6 +133,14 @@ class Firebase extends EventEmitter {
   handleContactsChanged(snapshot) {
     const contacts = snapshot.val() || {};
     this.updateConversations(this.conversations, contacts);
+  }
+
+  handlePhoneOnlineChanged(snapshot) {
+    this.phoneOnline = !!snapshot.val();
+    this.emit({
+      type: EVENTS.PHONE_STATUS_CHANGED,
+      phoneOnline: this.phoneOnline
+    });
   }
 
   handleMessagesChanged(snapshot) {
@@ -177,4 +184,4 @@ class Firebase extends EventEmitter {
   }
 }
 
-export default new Firebase(); // singleton
+export default new FirebaseStore(); // singleton

@@ -1,11 +1,14 @@
 import React, { Component } from 'react';
-import './login.css';
+import RaisedButton from 'material-ui/RaisedButton';
 import * as firebase from 'firebase';
+import FirebaseStore from '../util/firebaseStore';
+import './login.css';
 
 export default class Login extends Component {
   componentDidMount() {
     this.authUnSubscriber = firebase.auth().onAuthStateChanged(user => {
       if (user) {
+        FirebaseStore.init();
         console.log('logged in!', user);
         this.props.history.replace('/home');
       }
@@ -23,8 +26,7 @@ export default class Login extends Component {
       .then(function(result) {
         console.log('logged in!', result);
       })
-      .catch(function(error) {
-        // Handle Errors here.
+      .catch(error => {
         console.error('error logging in', error);
       });
   };
@@ -32,8 +34,9 @@ export default class Login extends Component {
   render() {
     return (
       <div className="login-page">
-        <div>Login page!</div>
-        <button onClick={this.login}>Log In</button>
+        <h1>MessageMe</h1>
+        <p className="login-page-welcome-message">Welcome! Please Sign in and unlock the magic!</p>
+        <RaisedButton label="Sign In" primary={true} onClick={this.login} />
       </div>
     );
   }

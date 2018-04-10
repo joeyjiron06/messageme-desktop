@@ -11,3 +11,7 @@ input {
 input:focus {
   outline: none;
 }
+
+div {
+  box-sizing: border-box;
+}

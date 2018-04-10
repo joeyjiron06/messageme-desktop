@@ -18,6 +18,8 @@
 }
 
 .message-text {
+  word-wrap: break-word;
+  width: 100%;
 }
 
 .message-content {
@@ -57,13 +59,12 @@
 }
 
 .message-pending-mark {
-  width: 8px;
-  height: 8px;
+  width: 12px;
+  height: 12px;
   font-size: 8px;
   flex-shrink: 0;
   border: solid 1px #66bb6a;
   border-radius: 50%;
-  padding: 2px;
   text-align: center;
   color: #66bb6a;
   margin-left: 4px;

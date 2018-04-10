@@ -1,5 +1,6 @@
 import React, { Component } from 'react';
-import { BrowserRouter, Route, Redirect } from 'react-router-dom';
+import { HashRouter, Route, Redirect } from 'react-router-dom';
+import MuiThemeProvider from 'material-ui/styles/MuiThemeProvider';
 import Login from './routes/login';
 import Home from './routes/home';
 import * as firebase from 'firebase';
@@ -9,18 +10,9 @@ function isLoggedIn() {
 }
 
 export default class App extends Component {
-  requireAuth = (nextState, replace) => {
-    if (!firebase.auth().currentUser) {
-      console.log('no user exists!');
-      replace({
-        pathname: '/'
-      });
-    } else {
-      console.log('user exists!');
-    }
-  };
-
   componentWillMount() {
+    // if you are reading this code please don't use my firebase api config.
+    // you can get your own config from here https://firebase.google.com/docs/web/setup
     firebase.initializeApp({
       apiKey: 'AIzaSyABLDsce39YrbqSL2od0xdgYUHvvMdK7d0',
       authDomain: 'messageme-644c5.firebaseapp.com',
@@ -33,17 +25,15 @@ export default class App extends Component {
 
   render() {
     return (
-      <BrowserRouter ref={this.onRouterRef}>
-        <div>
-          <Route exact path="/" render={() => <Redirect to="/login" />} />
-          <Route exact path="/login" component={Login} />
-          <Route
-            exact
-            path="/home"
-            render={() => (isLoggedIn() ? <Home /> : <Redirect to="/" />)}
-          />
-        </div>
-      </BrowserRouter>
+      <MuiThemeProvider>
+        <HashRouter ref={this.onRouterRef}>
+          <div>
+            <Route exact path="/" render={() => <Redirect to="/login" />} />
+            <Route exact path="/login" component={Login} />
+            <Route exact path="/home" render={() => (isLoggedIn() ? <Home /> : <Redirect to="/" />)} />
+          </div>
+        </HashRouter>
+      </MuiThemeProvider>
     );
   }
 }

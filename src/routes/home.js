@@ -3,7 +3,8 @@ import ReactDOM from 'react-dom';
 import * as firebase from 'firebase';
 import Conversation from '../components/conversation';
 import Message from '../components/message';
-import Firebase, { EVENTS } from '../util/firebase';
+import NavBar from '../components/navbar';
+import FirebaseStore, { EVENTS } from '../util/firebaseStore';
 import { MESSAGE_STATUS } from '../util/constants';
 import './home.css';
 
@@ -46,7 +47,7 @@ export default class Home extends Component {
       const message = this.createMessage(body);
 
       // send it via firebase, wait for MESSAGES_CHANGED event to fire
-      Firebase.sendMessage(message);
+      FirebaseStore.sendMessage(message);
 
       // clear input
       event.target.value = null;
@@ -54,7 +55,7 @@ export default class Home extends Component {
   };
 
   onMmsContentClicked = (message, part) => {
-    Firebase.requestMMSContent(message, part)
+    FirebaseStore.requestMMSContent(message, part)
       .then(url => {
         part.url = url;
         // trigger a UI update
@@ -86,7 +87,7 @@ export default class Home extends Component {
     // tell firebase the we are looking at the conversation so that the phone
     // will update the databse with messages for this conversation, wait for the
     // event.type to be MESSAGES_CHANGED
-    Firebase.setConversation(conversation);
+    FirebaseStore.setConversation(conversation);
   }
 
   // HELPERS
@@ -194,31 +195,18 @@ export default class Home extends Component {
       return;
     }
 
-    let title = Firebase.contacts[lastMessage.address] || lastMessage.address;
+    let title = FirebaseStore.contacts[lastMessage.address] || lastMessage.address;
 
     this.showNotification(title, lastMessage.body);
   }
 
   // LIFECYCLE
   componentDidMount() {
-    window.home = this;
-    const user = firebase.auth().currentUser;
-    if (!user) {
-      console.log('what!this shouldnt happen, no user');
-      return;
-    }
-
-    Firebase.addListener(this.handleFirebaseEvent);
-    Firebase.init();
+    FirebaseStore.addListener(this.handleFirebaseEvent);
   }
 
   componentWillUnmount() {
-    Firebase.removeListener(this.handleFirebaseEvent);
-
-    this.contactsDB.off('value', this.contactsChanged);
-    this.outboxDB.off('value', this.outboxChanged);
-    this.conversationsDB.off('value', this.conversationsChanged);
-    this.sentDB.off('value', this.onSentChanged);
+    FirebaseStore.removeListener(this.handleFirebaseEvent);
   }
 
   render() {
@@ -226,9 +214,7 @@ export default class Home extends Component {
 
     return (
       <div className="home-page">
-        <div className="nav-bar">
-          <h1>Messages</h1>
-        </div>
+        <NavBar />
 
         <div className="home-body">
           {/* CONVERSATIONS on the left */}

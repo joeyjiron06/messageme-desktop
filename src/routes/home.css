@@ -6,15 +6,6 @@
   height: 100vh;
 }
 
-.nav-bar {
-  width: 100%;
-  border-bottom: solid 1px #efefef;
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  padding: 10px;
-}
-
 .home-body {
   flex-grow: 1;
   display: flex;
