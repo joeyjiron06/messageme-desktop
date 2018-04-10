@@ -182,21 +182,15 @@ export default class Home extends Component {
   }
 
   attemptToShowNotification(messages) {
-    return;
-
-    const lastMessage = messages[messages.length - 1];
-
-    if (this.state.isLoading) {
-      return;
-    }
-
-    if (!lastMessage || lastMessage.status !== MESSAGE_STATUS.RECEIVED) {
-      return;
-    }
-
-    let title = FirebaseStore.contacts[lastMessage.address] || lastMessage.address;
-
-    this.showNotification(title, lastMessage.body);
+    // const lastMessage = messages[messages.length - 1];
+    // if (this.state.isLoading) {
+    //   return;
+    // }
+    // if (!lastMessage || lastMessage.status !== MESSAGE_STATUS.RECEIVED) {
+    //   return;
+    // }
+    // let title = FirebaseStore.contacts[lastMessage.address] || lastMessage.address;
+    // this.showNotification(title, lastMessage.body);
   }
 
   // LIFECYCLE
