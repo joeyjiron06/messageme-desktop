@@ -31,7 +31,7 @@ function renderMMSContent(message, onClick) {
           );
         }
 
-        return <img src={part.url} key={part.id} className="message-image" alt="mms image" />;
+        return <img src={part.url} key={part.id} className="message-image" alt="mms message" />;
 
       default:
         return null;
