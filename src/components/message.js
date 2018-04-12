@@ -1,7 +1,6 @@
 import React from 'react';
 import { MESSAGE_STATUS } from '../util/constants';
 import './message.css';
-import { red400 } from 'material-ui/styles/colors';
 import IconButton from 'material-ui/IconButton';
 
 export default ({ message, onClick, onMmsContentClicked }) => (
