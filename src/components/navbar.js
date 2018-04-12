@@ -109,6 +109,8 @@ export default class NavBar extends Component {
             onRequestClose={this.closeMenu}
           >
             <Menu>
+              <MenuItem primaryText={user ? user.displayName : null} />
+              <Divider />
               <MenuItem primaryText="About" onClick={this.openAboutDialog} />
               <MenuItem primaryText="Settings" />
               <Divider />
