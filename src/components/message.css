@@ -43,7 +43,6 @@
   background: white;
   padding: 4px;
   border-radius: 8px;
-  color: #9e9e9e;
   display: flex;
   cursor: pointer;
 }
@@ -58,7 +57,7 @@
   color: white;
 }
 
-.message-pending-mark {
+.message-status-mark {
   width: 12px;
   height: 12px;
   font-size: 8px;
@@ -70,7 +69,12 @@
   margin-left: 4px;
 }
 
-.message-pending-mark--sent {
+.message-status-mark--sent {
   background-color: #66bb6a;
+  color: white;
+}
+
+.message-status-mark--failed {
+  background-color: #ef5350;
   color: white;
 }
