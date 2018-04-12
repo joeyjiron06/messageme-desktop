@@ -9,6 +9,8 @@ function isLoggedIn() {
   return !!firebase.auth().currentUser;
 }
 
+console.log('public url', process.env.PUBLIC_URL);
+
 export default class App extends Component {
   componentWillMount() {
     // if you are reading this code please don't use my firebase api config.
@@ -26,7 +28,7 @@ export default class App extends Component {
   render() {
     return (
       <MuiThemeProvider>
-        <BrowserRouter basename={process.env.baseurl}>
+        <BrowserRouter basename={process.env.PUBLIC_URL}>
           <div>
             <Route exact path="/" render={() => <Redirect to="/login" />} />
             <Route exact path="/login" component={Login} />
