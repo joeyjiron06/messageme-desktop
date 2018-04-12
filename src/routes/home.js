@@ -5,6 +5,8 @@ import Message from '../components/message';
 import NavBar from '../components/navbar';
 import FirebaseStore, { EVENTS } from '../util/firebaseStore';
 import { MESSAGE_STATUS } from '../util/constants';
+import { withRouter } from 'react-router';
+
 import './home.css';
 
 function playSound(url) {
@@ -19,7 +21,7 @@ function playSound(url) {
 }
 
 // https://yalantis.com/blog/what-i-learned-building-smsmms-messenger-for-android/
-export default class Home extends Component {
+class Home extends Component {
   state = {
     messages: [], // the messages the phone has sent
     outboxMessages: [], // the messages this app has requested to be sent
@@ -195,6 +197,7 @@ export default class Home extends Component {
 
   // LIFECYCLE
   componentDidMount() {
+    window.home = this;
     FirebaseStore.addListener(this.handleFirebaseEvent);
   }
 
@@ -207,7 +210,7 @@ export default class Home extends Component {
 
     return (
       <div className="home-page">
-        <NavBar />
+        <NavBar history={this.props.history} />
 
         <div className="home-body">
           {/* CONVERSATIONS on the left */}
@@ -248,3 +251,5 @@ export default class Home extends Component {
     );
   }
 }
+
+export default withRouter(Home);
