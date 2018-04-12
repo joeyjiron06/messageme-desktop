@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { HashRouter, Route, Redirect } from 'react-router-dom';
+import { BrowserRouter, Route, Redirect } from 'react-router-dom';
 import MuiThemeProvider from 'material-ui/styles/MuiThemeProvider';
 import Login from './routes/login';
 import Home from './routes/home';
@@ -26,13 +26,13 @@ export default class App extends Component {
   render() {
     return (
       <MuiThemeProvider>
-        <HashRouter ref={this.onRouterRef}>
+        <BrowserRouter basename={process.env.baseurl}>
           <div>
             <Route exact path="/" render={() => <Redirect to="/login" />} />
             <Route exact path="/login" component={Login} />
             <Route exact path="/home" render={() => (isLoggedIn() ? <Home /> : <Redirect to="/" />)} />
           </div>
-        </HashRouter>
+        </BrowserRouter>
       </MuiThemeProvider>
     );
   }
