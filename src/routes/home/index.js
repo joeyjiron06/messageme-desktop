@@ -1,13 +1,11 @@
 import React, { Component } from 'react';
 import ReactDOM from 'react-dom';
-import Conversation from '../components/conversation';
-import Message from '../components/message';
-import NavBar from '../components/navbar';
-import FirebaseStore, { EVENTS } from '../util/firebaseStore';
-import { MESSAGE_STATUS } from '../util/constants';
+import Conversation from './components/conversation';
+import Message from './components/message';
+import NavBar from './components/navbar';
+import { MESSAGE_STATUS, EVENTS } from '../../util/constants';
 import { withRouter } from 'react-router';
-
-import './home.css';
+import './index.css';
 
 function playSound(url) {
   return new Promise((resolve, reject) => {
@@ -48,7 +46,10 @@ class Home extends Component {
       const message = this.createMessage(body);
 
       // send it via firebase, wait for MESSAGES_CHANGED event to fire
-      FirebaseStore.sendMessage(message);
+      this.props.store.dispatch({
+        type: EVENTS.SEND_MESSAGE,
+        message
+      });
 
       // clear input
       event.target.value = null;
@@ -56,17 +57,11 @@ class Home extends Component {
   };
 
   onMmsContentClicked = (message, part) => {
-    FirebaseStore.requestMMSContent(message, part)
-      .then(url => {
-        part.url = url;
-        // trigger a UI update
-        this.setState({
-          messages: this.state.messages
-        });
-      })
-      .catch(err => {
-        console.error('error fetching url', err);
-      });
+    this.props.store.dispatch({
+      type: EVENTS.REQUEST_MMS_UPLOAD,
+      message,
+      part
+    });
   };
 
   conversationClicked(conversation) {
@@ -88,7 +83,10 @@ class Home extends Component {
     // tell firebase the we are looking at the conversation so that the phone
     // will update the databse with messages for this conversation, wait for the
     // event.type to be MESSAGES_CHANGED
-    FirebaseStore.setConversation(conversation);
+    this.props.store.dispatch({
+      type: EVENTS.CONVERSATION_SELECTED,
+      conversation
+    });
   }
 
   // HELPERS
@@ -149,7 +147,6 @@ class Home extends Component {
   }
 
   handleFirebaseEvent = event => {
-    console.log('firebase event', event);
     switch (event.type) {
       case EVENTS.CONVERSATIONS_CHANGED:
         this.setState(
@@ -162,26 +159,19 @@ class Home extends Component {
         );
         break;
       case EVENTS.MESSAGES_CHANGED:
-        this.handleMessagesChanged(event.messages);
-        break;
-      default:
-        console.log('unhandled event', event);
+        this.attemptToShowNotification(event.messages);
+        this.setState(
+          {
+            isLoading: false,
+            messages: event.messages
+          },
+          () => {
+            this.scrollToBottom();
+          }
+        );
         break;
     }
   };
-
-  handleMessagesChanged(messages) {
-    this.attemptToShowNotification(messages);
-    this.setState(
-      {
-        isLoading: false,
-        messages
-      },
-      () => {
-        this.scrollToBottom();
-      }
-    );
-  }
 
   attemptToShowNotification(messages) {
     // const lastMessage = messages[messages.length - 1];
@@ -197,12 +187,11 @@ class Home extends Component {
 
   // LIFECYCLE
   componentDidMount() {
-    window.home = this;
-    FirebaseStore.addListener(this.handleFirebaseEvent);
+    this.props.store.subscribe(this.handleFirebaseEvent);
   }
 
   componentWillUnmount() {
-    FirebaseStore.removeListener(this.handleFirebaseEvent);
+    this.props.store.unsubscribe(this.handleFirebaseEvent);
   }
 
   render() {
@@ -210,7 +199,7 @@ class Home extends Component {
 
     return (
       <div className="home-page">
-        <NavBar history={this.props.history} />
+        <NavBar history={this.props.history} store={this.props.store} />
 
         <div className="home-body">
           {/* CONVERSATIONS on the left */}

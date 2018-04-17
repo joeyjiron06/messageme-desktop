@@ -1,5 +1,5 @@
 import React from 'react';
-import { MESSAGE_STATUS } from '../util/constants';
+import { MESSAGE_STATUS } from '../../../util/constants';
 import './message.css';
 import IconButton from 'material-ui/IconButton';
 
@@ -30,8 +30,8 @@ export default ({ message, onClick, onMmsContentClicked }) => (
               key={part.id}
               part={part}
               onClick={() => {
-                if (typeof onClick === 'function') {
-                  onClick(message, part);
+                if (typeof onMmsContentClicked === 'function') {
+                  onMmsContentClicked(message, part);
                 }
               }}
             />

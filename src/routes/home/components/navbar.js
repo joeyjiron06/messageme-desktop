@@ -1,5 +1,6 @@
 import React, { Component } from 'react';
-import FirebaseStore, { EVENTS } from '../util/firebaseStore';
+import { EVENTS } from '../../../util/constants';
+import packageJson from '../../../package.alias.json';
 import { green400, grey300 } from 'material-ui/styles/colors';
 import Popover from 'material-ui/Popover';
 import Menu from 'material-ui/Menu';
@@ -8,8 +9,6 @@ import Divider from 'material-ui/Divider';
 import Dialog from 'material-ui/Dialog';
 import FlatButton from 'material-ui/FlatButton';
 import IconButton from 'material-ui/IconButton';
-import * as firebase from 'firebase';
-import packageJson from '../package.alias.json';
 
 import './navbar.css';
 
@@ -22,17 +21,21 @@ export default class NavBar extends Component {
   };
 
   componentDidMount() {
-    FirebaseStore.addListener(this.handleFirebaseEvent);
-    firebase.auth().onAuthStateChanged(user => {
-      if (user) {
-        this.setState({ user });
-        console.log('user', user);
-      }
+    this.setState({
+      user: this.props.store.user
     });
+    this.props.store.subscribe(this.handleFirebaseEvent);
+  }
+
+  componentWillUnmount() {
+    this.props.store.unsubscribe(this.handleFirebaseEvent);
   }
 
   handleFirebaseEvent = event => {
     switch (event.type) {
+      case EVENTS.USER_CHANGED:
+        this.setState({ user: event.user });
+        break;
       case EVENTS.PHONE_STATUS_CHANGED:
         this.setState({
           phoneOnline: event.phoneOnline
@@ -59,16 +62,10 @@ export default class NavBar extends Component {
   };
 
   signOut = event => {
-    firebase
-      .auth()
-      .signOut()
-      .then(() => {
-        localStorage.clear();
-        this.props.history.replace('/');
-      })
-      .catch(error => {
-        console.error('error signing out', error);
-      });
+    this.props.history.replace('/');
+    this.props.store.dispatch({
+      type: EVENTS.LOGOUT
+    });
   };
 
   openAboutDialog = event => {
