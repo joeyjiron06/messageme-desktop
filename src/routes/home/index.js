@@ -170,6 +170,9 @@ class Home extends Component {
           }
         );
         break;
+
+      default:
+        break;
     }
   };
 

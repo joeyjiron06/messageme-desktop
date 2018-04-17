@@ -1,6 +1,6 @@
 import Dispatcher from './dispatcher';
 import firebaseActionResponder from './firebaseActionResponder';
-import firebaseActionFixtureResponder from './firebaseActionFixtureResponder';
+// import firebaseActionFixtureResponder from './firebaseActionFixtureResponder';
 import firebaseStateUpdater from './firebaseStateUpdater';
 
 const store = new Dispatcher();
